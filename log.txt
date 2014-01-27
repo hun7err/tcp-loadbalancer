@@ -1,0 +1,4 @@
+loadbalancer.c: In function ‘main’:
+loadbalancer.c:35:9: warning: variable ‘out_port’ set but not used [-Wunused-but-set-variable]
+         out_port,               // port wyjsciowy dla nas, a wejsciowy dla wezlow (mozemy udawac 22 dla SSH a przekierowywac pod 33 dla wezla)
+         ^
