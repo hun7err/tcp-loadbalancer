@@ -249,14 +249,13 @@ int main(int argc, char ** argv)
                 int in_sock = events[current_event].data.fd,
                     n_in,
                     n_out;
-                printf("Received data from socket %d\n", in_sock);
+
                 int out_sock = get_corresponding_socket(in_sock);
-                printf("Sending data to socket %d\n", out_sock);
 
                 if(out_sock != -1)
                 {
                     char buf[128];
-                    while((n_in = recv(in_sock, buf, 128, 0)) != -1)
+                    while((n_in = recv(in_sock, buf, 128, 0)) > 0)
                     {
                         n_out = send(out_sock, buf, n_in, 0);
                         if(n_out == -1)
@@ -264,6 +263,11 @@ int main(int argc, char ** argv)
                             perror("[!] Could send the received data; closing connection");
                             close(out_sock);
                         }
+                    }
+
+                    if(n_in == 0)
+                    {
+                        // usun klienta
                     }
                 }
             }

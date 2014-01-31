@@ -57,7 +57,6 @@ void initialize_nodes(void)
 
 int add_new_node(char* address, int out_port) // zwroc id node'a
 {
-    printf("[ ] Adding new node...\n");
     int i;
     for(i = 0; i < MAX_NODE_COUNT; i++)
     {
@@ -65,13 +64,12 @@ int add_new_node(char* address, int out_port) // zwroc id node'a
         {
             nodes[i].used = 1;
             current_node_count++;
-            strcpy(nodes[i].ip, address);
-            if(create_connection_pool(nodes[i].id, out_port) == -1)
+            strncpy(nodes[i].ip, address, INET_ADDRSTRLEN);
+            if(create_connection_pool(i, out_port) == -1)
             {
                 perror("[!] Connection pool creation failed");
             }
 
-            printf("[+] Node added\n");
             return nodes[i].id;
         }
     }
@@ -109,7 +107,7 @@ int add_new_node_socket(int id, int out_port)
     addr.sin_family = AF_INET;
     addr.sin_port = htons(out_port);
 
-    inet_pton(AF_INET, nodes[found].ip, &(addr.sin_addr));
+    inet_pton(AF_INET, nodes[id].ip, &(addr.sin_addr));
 
     if(connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1)
     {
@@ -190,7 +188,7 @@ int add_new_client(int client, int out_port)  // gotowe
                 nodes[best_node_id].conn_count++;
                 nodes[best_node_id].pool_usage++;
 
-                return 0;
+                return node_sd;
             }
         }
     }
@@ -216,15 +214,16 @@ int add_new_client(int client, int out_port)  // gotowe
 
 int get_best_node(void) // wybierz wezel o najmniejszym obciazeniu
 {
-    int id_of_min_conns = nodes[0].conn_count, i;
+    int id_of_min_conns = 0, i;
 
     for(i = 0; i < MAX_NODE_COUNT; i++)
     {
-        if(nodes[id_of_min_conns].conn_count == 0 && nodes[i].conn_count != 0)
+        if(nodes[id_of_min_conns].used == 0)
         {
             id_of_min_conns = i;
         }
-        else if (nodes[id_of_min_conns].conn_count != 0)
+
+        if(nodes[i].used == 1)
         {
             if(nodes[i].conn_count < nodes[id_of_min_conns].conn_count)
             {
