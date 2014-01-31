@@ -57,18 +57,6 @@ int main(int argc, char ** argv)
         return -1;
     }
 
-    /*if(make_socket_nonblocking(sd_in) == -1)
-    {
-        cleanup();
-        return -1;
-    }
-
-    if(make_socket_nonblocking(config_sd) == -1)
-    {
-        cleanup();
-        return -1;
-    }*/
-
     if(listen(sd_in, 100) == -1)
     {
         perror("[!] Could not start listening for client connections");
@@ -140,7 +128,7 @@ int main(int argc, char ** argv)
             }
             else if(sd_in == events[current_event].data.fd)
             {
-                int socket = accept_client();
+                int socket = accept_client(sd_in);
                 if(socket != -1)
                 {
                     event.data.fd = socket;

@@ -1,6 +1,7 @@
 #include "sockets.h"
 #include <fcntl.h>      // fcntl
 #include <stdio.h>      // perror
+#include <unistd.h>     // close
 #include <sys/types.h>  // socket, bind
 #include <sys/socket.h> // socket, bind
 #include <net/if.h>     // ifreq
@@ -92,13 +93,13 @@ int create_and_bind_sockets(char *iface, int in_port, int config_port)
     return 0;
 }
 
-int accept_client(void)
+int accept_client(int socket)
 {
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
 
     static int new_client_sd;
-    new_client_sd = accept(sd_in, (struct sockaddr*)&client_addr, &client_addr_len);
+    new_client_sd = accept(socket, (struct sockaddr*)&client_addr, &client_addr_len);
 
     if(new_client_sd == -1)
     {
