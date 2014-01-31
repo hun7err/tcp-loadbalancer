@@ -14,6 +14,7 @@
 #include "fdescriptors.h"
 #include "commands.h"
 #include "sockets.h"
+#include "nodes.h"
 #include "pack.h"
 #include "hex.h"
 
@@ -106,6 +107,19 @@ int main(int argc, char ** argv)
     events = calloc(64, sizeof(event));
     client_sd = -1;
 
+    initialize_nodes();
+    char *nodes_to_add[] = {"192.168.122.70", "192.168.122.46", "192.168.122.32"};
+    int cur_node;
+    for(cur_node = 0; cur_node < 3; cur_node++)
+    {
+        if(add_new_node(nodes_to_add[cur_node], out_port) == -1)
+        {
+            perror("[!] Could not add node");
+            cleanup();
+            return -1;
+        }
+    }
+
     while(1)
     {
         static int current_event, event_count;
@@ -121,13 +135,9 @@ int main(int argc, char ** argv)
                 close(events[current_event].data.fd);
                 continue;
             }
-            else if (sd_in == events[current_event].data.fd) // przychodzace polaczenie do przekierowania
-            {
-                // debug
-                printf("Data on main socket\n");
-            }
             else if(sd_in == events[current_event].data.fd)
             {
+                printf("[+] Incoming client connection\n");
                 int socket = accept_client(sd_in);
                 if(socket != -1)
                 {
@@ -137,6 +147,12 @@ int main(int argc, char ** argv)
                     if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket, &event) == -1)
                     {
                         perror("[!] epoll_ctl");
+                        close(socket);
+                    }
+
+                    if(add_new_client(socket, out_port) == -1)
+                    {
+                        printf("[!] Could not add client! Closing connection...");
                         close(socket);
                     }
                 }
@@ -230,7 +246,26 @@ int main(int argc, char ** argv)
             }
             else
             {
-            // ruch ktory mamy rownowazyc: klient lub serwer
+                int in_sock = events[current_event].data.fd,
+                    n_in,
+                    n_out;
+                printf("Received data from socket %d\n", in_sock);
+                int out_sock = get_corresponding_socket(in_sock);
+                printf("Sending data to socket %d\n", out_sock);
+
+                if(out_sock != -1)
+                {
+                    char buf[128];
+                    while((n_in = recv(in_sock, buf, 128, 0)) != -1)
+                    {
+                        n_out = send(out_sock, buf, n_in, 0);
+                        if(n_out == -1)
+                        {
+                            perror("[!] Could send the received data; closing connection");
+                            close(out_sock);
+                        }
+                    }
+                }
             }
         }
 

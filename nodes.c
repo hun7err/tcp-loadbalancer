@@ -2,12 +2,14 @@
 #include "sockets.h"
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <net/if.h>
 #include <arpa/inet.h>
 #include <string.h>
 
+extern int epoll_fd;
 // ewentualnie tutaj extern sd_in, config_sd itp.
 
 #define MAX_CONNECTION_COUNT 512
@@ -35,6 +37,7 @@ struct node_info nodes[MAX_NODE_COUNT];
 
 void initialize_nodes(void)
 {
+    printf("[ ] Initializing node info...\n");
     memset(nodes, 0, sizeof(struct node_info)*MAX_NODE_COUNT);
     int i, j;
     for(i = 0; i < MAX_NODE_COUNT; i++)
@@ -49,10 +52,12 @@ void initialize_nodes(void)
         nodes[i].used = 0;
         nodes[i].pool_usage = 0;
     }
+    printf("[+] Node info filled in successfully\n");
 }
 
-int add_new_node(char* address) // zwroc id node'a
+int add_new_node(char* address, int out_port) // zwroc id node'a
 {
+    printf("[ ] Adding new node...\n");
     int i;
     for(i = 0; i < MAX_NODE_COUNT; i++)
     {
@@ -61,9 +66,16 @@ int add_new_node(char* address) // zwroc id node'a
             nodes[i].used = 1;
             current_node_count++;
             strcpy(nodes[i].ip, address);
+            if(create_connection_pool(nodes[i].id, out_port) == -1)
+            {
+                perror("[!] Connection pool creation failed");
+            }
+
+            printf("[+] Node added\n");
             return nodes[i].id;
         }
     }
+    printf("[!] Could not add the node\n");
     return -1;
 }
 
@@ -86,7 +98,7 @@ int add_new_node_socket(int id, int out_port)
         return -1;
     }
 
-    int sock = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0);
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
     if(sock == -1)
     {
         perror("[!] Could not create socket");
@@ -105,6 +117,13 @@ int add_new_node_socket(int id, int out_port)
         return -1;
     }
 
+    if(make_socket_nonblocking(sock) == -1)
+    {
+        perror("[!] Could not make the socket non-blocking");
+        close(sock);
+        return -1;
+    }
+
     nodes[id].conn_map[found].out = sock;
     return sock;
 }
@@ -117,7 +136,7 @@ int create_connection_pool(int node_id, int out_port)
     {
         if(add_new_node_socket(node_id, out_port) == -1)
         {
-            perror("[!] Could not create socket on the node!");
+            perror("[!] Could not create socket on the node");
             return -1;
         }
         nodes[node_id].pool_usage--;
@@ -154,6 +173,18 @@ int add_new_client(int client, int out_port)  // gotowe
             }
             else if (current_mapping.out != 0)
             {
+                int node_sd = nodes[best_node_id].conn_map[current_connection].out;
+
+                struct epoll_event event;
+                event.data.fd = node_sd;
+                event.events = EPOLLIN | EPOLLET;
+
+                if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, node_sd, &event) == -1)
+                {
+                    perror("[!] epoll_ctl node_fd");
+                    return -1;
+                }
+
                 nodes[best_node_id].conn_map[current_connection].in = client;
                 nodes[best_node_id].conn_map[current_connection].used = 1;
                 nodes[best_node_id].conn_count++;
@@ -205,5 +236,27 @@ int get_best_node(void) // wybierz wezel o najmniejszym obciazeniu
     return id_of_min_conns;
 }
 
+int get_corresponding_socket(int sock)
+{
+    int i, j;
+    for(i = 0; i < MAX_NODE_COUNT; i++)
+    {
+        if(nodes[i].used != 0)
+        {
+            for(j = 0; j < MAX_CONNECTION_COUNT; j++)
+            {
+                if(nodes[i].conn_map[j].in == sock)
+                {
+                    return nodes[i].conn_map[j].out;
+                }
+                else if(nodes[i].conn_map[j].out == sock && nodes[i].conn_map[j].in != -1)
+                {
+                    return nodes[i].conn_map[j].in;
+                }
+            }
+        }
+    }
 
+    return -1;
+}
 
