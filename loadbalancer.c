@@ -140,38 +140,18 @@ int main(int argc, char ** argv)
             }
             else if(sd_in == events[current_event].data.fd)
             {
-                /*struct sockaddr_in client_addr;
-                socklen_t client_addr_len = sizeof(client_addr);
-
-                static int new_client_sd;
-                new_client_sd = accept(sd_in, (struct sockaddr*)&client_addr, &client_addr_len);
-
-                if(new_client_sd == -1)
+                int socket = accept_client();
+                if(socket != -1)
                 {
-                    perror("[!] Could not accept client connection");
+                    event.data.fd = socket;
+                    event.events = EPOLLIN | EPOLLET;
+
+                    if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socket, &event) == -1)
+                    {
+                        perror("[!] epoll_ctl");
+                        close(socket);
+                    }
                 }
-
-                char address_string[INET_ADDRSTRLEN];
-                memset(address_string, 0, INET_ADDRSTRLEN);
-
-                inet_ntop(AF_INET, &(client_addr.sin_addr), address_string, INET_ADDRSTRLEN);
-                printf("[+] Accepted new client: %s:%d is now on sd %d\n", address_string, ntohs(client_addr.sin_port), new_client_sd);
-
-                if(make_socket_nonblocking(new_client_sd) == -1)
-                {
-                    printf("[!] Closing client connection\n");
-                    close(new_client_sd);
-                }
-
-                event.data.fd = new_client_sd;
-                event.events = EPOLLIN | EPOLLET;
-
-                if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, new_client_sd, &event) == -1)
-                {
-                    perror("[!] epoll_ctl");
-                    close(new_client_sd);
-                }*/
-
                 // tutaj wybierz odpowiednia maszyne do przydzielenia dla polaczenia i tam przypisz fd
             }
             else if (config_sd == events[current_event].data.fd) // podlaczony klient do konfiguracji

@@ -92,5 +92,33 @@ int create_and_bind_sockets(char *iface, int in_port, int config_port)
     return 0;
 }
 
+int accept_client(void)
+{
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
 
+    static int new_client_sd;
+    new_client_sd = accept(sd_in, (struct sockaddr*)&client_addr, &client_addr_len);
+
+    if(new_client_sd == -1)
+    {
+        perror("[!] Could not accept client connection");
+        return -1;
+    }
+
+    char address_string[INET_ADDRSTRLEN];
+    memset(address_string, 0, INET_ADDRSTRLEN);
+
+    inet_ntop(AF_INET, &(client_addr.sin_addr), address_string, INET_ADDRSTRLEN);
+    printf("[+] Accepted new client: %s:%d on socket %d\n", address_string, ntohs(client_addr.sin_port), new_client_sd);
+
+    if(make_socket_nonblocking(new_client_sd) == -1)
+    {
+        printf("[!] Could not make the socket non-blocking; closing connection");
+        close(new_client_sd);
+        return -1;
+    }
+
+    return new_client_sd;
+}
 
