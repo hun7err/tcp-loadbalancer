@@ -124,6 +124,7 @@ int main(int argc, char ** argv)
     {
         static int current_event, event_count;
 
+        errno = 0;
         event_count = epoll_wait(epoll_fd, events, 64, -1);
         for(current_event = 0; current_event < event_count; current_event++)
         {
@@ -131,7 +132,8 @@ int main(int argc, char ** argv)
                     (events[current_event].events & EPOLLHUP) ||
                     (!(events[current_event].events & EPOLLIN)))
             {
-                fprintf(stderr, "[!] Epoll error\n");
+                //fprintf(stderr, "[!] Epoll error\n");
+                perror("Epoll error");
                 close(events[current_event].data.fd);
                 continue;
             }
@@ -260,15 +262,26 @@ int main(int argc, char ** argv)
                         n_out = send(out_sock, buf, n_in, 0);
                         if(n_out == -1)
                         {
-                            perror("[!] Could send the received data; closing connection");
+                            perror("[!] Could not send the received data");
+                            printf("Closing connection with %d\n", out_sock);
                             close(out_sock);
                         }
                     }
 
-                    if(n_in == 0)
+                    if(n_in == 0 && is_node_socket(in_sock) == -1)
                     {
+                        printf("[ ] Client on sd %d disconnected\n", in_sock);
+                        /*if(repair_node_pool(get_corresponding_socket(in_sock), out_port) == -1)
+                        {
+                            printf("[!] Error on repair_node_pool\n");
+                        }*/
+                        remove_client(in_sock);
                         // usun klienta
                     }
+                    /*else if (n_in == 0 && is_node_socket(in_sock) != -1)
+                    {
+                        repair_node_pool(in_sock, out_port);
+                    }*/
                 }
             }
         }

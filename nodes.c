@@ -1,5 +1,7 @@
 #include "nodes.h"
 #include "sockets.h"
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/epoll.h>
@@ -257,5 +259,78 @@ int get_corresponding_socket(int sock)
     }
 
     return -1;
+}
+
+int is_node_socket(int sock)
+{
+    int i, j;
+    for(i = 0; i < MAX_NODE_COUNT; i++)
+    {
+        for(j = 0; j < MAX_CONNECTION_COUNT; j++)
+        {
+            if(nodes[i].conn_map[j].out == sock)
+            {
+                return 0;
+            }
+        }
+    }
+
+    return -1;
+}
+
+int remove_node(char* address)
+{
+    return 0;
+}
+
+int repair_node_pool(int node_sock, int out_port) // nic nie daje
+{
+    //int flags;
+    //fcntl(node_sock, F_GETFD, &flags);
+
+    //if(flags & EBADF)
+    //{
+        printf("Found a bad FD\n");
+        int i, j, id;
+        for(i = 0; i < MAX_NODE_COUNT; i++)
+        {
+            for(j = 0; j < MAX_CONNECTION_COUNT; j++)
+            {
+                if(nodes[i].conn_map[j].out == node_sock)
+                {
+                    id = i;
+                    break;
+                }
+            }
+        }
+
+        close(node_sock);
+        // ustal na ktorym node jest ten socket
+        if(add_new_node_socket(id, out_port) == -1)
+        {
+            return -1;
+        }
+
+        struct epoll_event event;
+        event.data.fd = node_sock;
+        event.events = EPOLLIN | EPOLLET;
+
+        if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, node_sock, &event) == -1)
+        {
+            close(node_sock);
+            perror("[!] epoll_ctl node_sock");
+            return -1;
+        }
+    //}
+
+    return 0;
+}
+
+int remove_client(int sock)
+{
+    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, NULL);
+
+    close(sock);
+    return 0;
 }
 
