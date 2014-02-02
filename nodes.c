@@ -12,29 +12,9 @@
 #include <string.h>
 
 extern int epoll_fd;
-// ewentualnie tutaj extern sd_in, config_sd itp.
 
-#define MAX_CONNECTION_COUNT 512
-#define MAX_NODE_COUNT 32
-
-int pool_size = 3;
-
-struct fd_pair {
-    int in;
-    int out;
-    int used;
-};
-
-struct node_info {
-    struct fd_pair conn_map[MAX_CONNECTION_COUNT];
-    int conn_count;
-    int pool_usage;
-    char ip[INET_ADDRSTRLEN];
-    int id;
-    int used;
-};
-
-int current_node_count;
+int pool_size = 3,
+    current_node_count;
 struct node_info nodes[MAX_NODE_COUNT];
 
 void initialize_nodes(void)

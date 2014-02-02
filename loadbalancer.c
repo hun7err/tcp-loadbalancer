@@ -14,6 +14,7 @@
 #include "fdescriptors.h"
 #include "commands.h"
 #include "sockets.h"
+#include "packet.h"
 #include "nodes.h"
 #include "pack.h"
 #include "hex.h"
@@ -207,7 +208,35 @@ int main(int argc, char ** argv)
 
             if(client_sd == events[current_event].data.fd && client_sd != -1)
             {
-               char buf[128];
+                struct header h;
+                int len = recv(client_sd, (char*)&h, sizeof(struct header), 0);
+
+                if(len < 0)
+                {
+                    printf("[!] Reading error on client; closing connection...\n");
+                    close(client_sd);
+                    client_sd = -1;
+                }
+                else
+                {
+                    if(len == 0)
+                    {
+                        printf("[ ] Conf. client disconnected.\n");
+                        close(client_sd);
+                        client_sd = -1;
+                    }
+                    else
+                    {
+                        char* packet = calloc(h.length, 1);
+                        len = recv(client_sd, packet, h.length, 0);
+                        if(interpret_command(h.type, packet) == -1)
+                        {
+                            printf("[!] Unrecognized command from the conf. client\n");
+                        }
+                        free(packet);
+                    }
+                }
+               /*char buf[128];
                static int data_len, count;
 
                ioctl(client_sd, FIONREAD, &count);
@@ -244,7 +273,7 @@ int main(int argc, char ** argv)
                        printf("[+] Valid command sent\n");
                        execute_command(buf);
                    }
-               }
+               }*/
             }
             else
             {

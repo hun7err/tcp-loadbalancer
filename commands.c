@@ -1,34 +1,87 @@
 #include "commands.h"
+#include "nodes.h"
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 extern int client_sd, sd_in, epoll_fd, config_sd;
 
-char *available_commands[] = { "ADD_NODE", "REMOVE_NODE" };
-int command_count = 2;
-
-int check_command(char* string)
+int interpret_command(int type, char* command)
 {
-    int current_command_ind = 0;
-    for(; current_command_ind < command_count; current_command_ind++)
+    if(type == ADD_NODE)
     {
-        if(strstr(string, available_commands[current_command_ind]) != NULL)
-        {
-            return 0;
-        }
+        struct node_to_add_ipv4 node = *(struct node_to_add_ipv4*)command;
+
+        add_new_node(node.address, node.port);
+
+        return 0;
     }
-    return -1;
+    else if(type == REMOVE_NODE)
+    {
+        remove_node(command);
+
+        return 0;
+    }
+    else if(type == LIST_NODES)
+    {
+        struct node_list_item_ipv4* node_list = get_node_list();
+
+        char* packet = node_list_packet(current_node_count, pool_size, 4, node_list);
+
+        int len = send(client_sd, packet, node_list_packet_size(current_node_count), 0);
+
+        if(len < 0)
+        {
+            perror("[!] Error sending response to client: ");
+            close(client_sd);
+            client_sd = -1;
+
+            free(packet);
+            return -1;
+        }
+
+        free(packet);
+
+        return 0;
+    }
+    else
+    {
+        printf("[!] Unrecognized configuration command\n");
+        struct header h;
+        h.type = COMMAND_NOT_IMPLEMENTED;
+        h.length = 0;
+
+        if(send(client_sd, (char*)&h, sizeof(h), 0) < 0)
+        {
+            perror("[!] Could not send response");
+            close(client_sd);
+            client_sd = -1;
+        }
+
+        return -1;
+    }
 }
 
-int execute_command(char* command)
+struct node_list_item_ipv4* get_node_list(void)
 {
-    char *argument = command;
-    while(*argument != ' ')
-        argument++;
-    argument++;
+    int i, current_node = 0;
+    struct node_list_item_ipv4* node_list = calloc(current_node_count * sizeof(struct node_list_item_ipv4), 1);
 
-    printf("arg: '%s'\n", argument);
+    for(i = 0; i < MAX_NODE_COUNT; i++)
+    {
+        if(nodes[i].used != 0)
+        {
+            node_list[current_node].connection_count = nodes[i].conn_count;
+            node_list[current_node].pool_usage = nodes[i].pool_usage;
+            strncpy(node_list[current_node].address, nodes[i].ip, strlen(nodes[i].ip)+1);
 
-    return 0;
+            current_node++;
+        }
+    }
+
+    return node_list;
 }
 
