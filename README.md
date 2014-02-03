@@ -1,4 +1,4 @@
 tcp-loadbalancer
 ================
 
-A TCP loadbalancer for a group of servers. The goal is to distribute loadbalancers but depends on the amount of time left.
+A TCP loadbalancer for a group of servers written in C. Node count can be modified by changing macros in include files.
