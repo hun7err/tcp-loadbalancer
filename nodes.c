@@ -33,6 +33,7 @@ void initialize_nodes(void)
         nodes[i].id = i;
         nodes[i].used = 0;
         nodes[i].pool_usage = 0;
+        nodes[i].to_remove = 0;
     }
     printf("[+] Node info filled in successfully\n");
 }
@@ -258,9 +259,42 @@ int is_node_socket(int sock)
     return -1;
 }
 
-int remove_node(char* address)
+int mark_for_removal(char* address)
 {
-    return 0;
+    int i;
+    for(i = 0; i < MAX_NODE_COUNT; i++)
+    {
+        if(strstr(address, nodes[i].ip) != NULL)
+        {
+            nodes[i].to_remove = 1;
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
+void remove_nodes(void)
+{
+    int i, j;
+    for(i = 0; i < MAX_NODE_COUNT; i++)
+    {
+        if(nodes[i].to_remove == 1 && nodes[i].conn_count == 0)
+        {
+            for(j = 0; j < MAX_CONNECTION_COUNT; j++)
+            {
+                if(nodes[i].conn_map[j].out != -1)
+                {
+                    close(nodes[i].conn_map[j].out);
+                }
+            }
+
+            nodes[i].used = 0;
+            memset(nodes[i].ip, 0, INET_ADDRSTRLEN);
+            nodes[i].pool_usage = 0;
+            nodes[i].to_remove = 0;
+        }
+    }
 }
 
 int repair_node_pool(int node_sock, int out_port) // nic nie daje

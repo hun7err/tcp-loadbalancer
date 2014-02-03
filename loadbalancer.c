@@ -19,7 +19,11 @@
 #include "pack.h"
 #include "hex.h"
 
-int sd_in, config_sd, client_sd, epoll_fd;
+int sd_in,      // socket for accepting incoming client connections
+    config_sd,  // listening socket descriptor for accepting config. clients
+    client_sd,  // configuration client socket descriptor
+    epoll_fd;   // epoll main file descriptor
+
 void sighandler(int signum);
 
 int main(int argc, char ** argv)
@@ -133,7 +137,6 @@ int main(int argc, char ** argv)
                     (events[current_event].events & EPOLLHUP) ||
                     (!(events[current_event].events & EPOLLIN)))
             {
-                //fprintf(stderr, "[!] Epoll error\n");
                 perror("Epoll error");
                 close(events[current_event].data.fd);
                 continue;
@@ -300,17 +303,14 @@ int main(int argc, char ** argv)
                     if(n_in == 0 && is_node_socket(in_sock) == -1)
                     {
                         printf("[ ] Client on sd %d disconnected\n", in_sock);
-                        /*if(repair_node_pool(get_corresponding_socket(in_sock), out_port) == -1)
-                        {
-                            printf("[!] Error on repair_node_pool\n");
-                        }*/
                         remove_client(in_sock);
+                        remove_nodes();
                         // usun klienta
                     }
-                    /*else if (n_in == 0 && is_node_socket(in_sock) != -1)
+                    else if (n_in == 0 && is_node_socket(in_sock) != -1)
                     {
                         repair_node_pool(in_sock, out_port);
-                    }*/
+                    }
                 }
             }
         }

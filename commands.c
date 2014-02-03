@@ -1,11 +1,11 @@
 #include "commands.h"
 #include "nodes.h"
-#include <string.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 extern int client_sd, sd_in, epoll_fd, config_sd;
 
@@ -21,7 +21,8 @@ int interpret_command(int type, char* command)
     }
     else if(type == REMOVE_NODE)
     {
-        remove_node(command);
+        mark_for_removal(command);
+        remove_nodes();
 
         return 0;
     }

@@ -20,6 +20,7 @@ struct node_info {
     char ip[INET_ADDRSTRLEN];
     int id;
     int used;
+    int to_remove;
 };
 
 extern struct node_info nodes[MAX_NODE_COUNT];
@@ -27,7 +28,8 @@ extern int current_node_count;
 
 void initialize_nodes(void);
 int add_new_node(char* address, int out_port);    // dodaj nowy wezel po adresie ip, stworz na nim connection pool i zwroc id w nodes[]
-int remove_node(char* address);
+int mark_for_removal(char* address);
+void remove_nodes(void);
 int add_new_socket(int id, int out_port);
 int create_connection_pool(int node_id, int out_port);
 int add_new_client(int client, int out_port);
