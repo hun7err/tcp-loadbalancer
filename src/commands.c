@@ -1,5 +1,5 @@
-#include "commands.h"
-#include "nodes.h"
+#include "../inc/commands.h"
+#include "../inc/nodes.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>

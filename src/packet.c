@@ -1,4 +1,4 @@
-#include "packet.h"
+#include "../inc/packet.h"
 #include <stdlib.h>
 #include <string.h>
 

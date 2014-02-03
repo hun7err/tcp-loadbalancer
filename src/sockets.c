@@ -1,4 +1,4 @@
-#include "sockets.h"
+#include "../inc/sockets.h"
 #include <fcntl.h>      // fcntl
 #include <stdio.h>      // perror
 #include <unistd.h>     // close

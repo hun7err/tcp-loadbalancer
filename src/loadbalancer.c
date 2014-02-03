@@ -11,13 +11,11 @@
 #include <sys/socket.h>
 #include <signal.h>
 
-#include "fdescriptors.h"
-#include "commands.h"
-#include "sockets.h"
-#include "packet.h"
-#include "nodes.h"
-#include "pack.h"
-#include "hex.h"
+#include "../inc/fdescriptors.h"
+#include "../inc/commands.h"
+#include "../inc/sockets.h"
+#include "../inc/packet.h"
+#include "../inc/nodes.h"
 
 int sd_in,      // socket for accepting incoming client connections
     config_sd,  // listening socket descriptor for accepting config. clients

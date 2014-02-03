@@ -1,5 +1,5 @@
-#include "nodes.h"
-#include "sockets.h"
+#include "../inc/nodes.h"
+#include "../inc/sockets.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
