@@ -300,7 +300,7 @@ void remove_nodes(void)
     }
 }
 
-int repair_node_pool(int node_sock, int out_port) // nic nie daje
+int repair_node_pool(int node_sock, int out_port)
 {
     int i, j, id;
     for(i = 0; i < MAX_NODE_COUNT; i++)
@@ -339,9 +339,32 @@ int repair_node_pool(int node_sock, int out_port) // nic nie daje
 
 int remove_client(int sock)
 {
+    if(sock == -1)
+    {
+        return -1;
+    }
+
+    int i, j, found = 0;
+    for(i = 0; i < MAX_NODE_COUNT && !found; i++)
+    {
+        for(j = 0; j < MAX_CONNECTION_COUNT && !found; j++)
+        {
+            if(nodes[i].conn_map[j].in == sock)
+            {
+                close(sock);
+                nodes[i].conn_map[j].in = -1;
+                nodes[i].conn_count--;
+                nodes[i].pool_usage--;
+                found = 1;
+
+                break;
+            }
+        }
+    }
+
     epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sock, NULL);
 
-    close(sock);
+    //close(sock);
     return 0;
 }
 
