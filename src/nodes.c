@@ -13,7 +13,7 @@
 
 extern int epoll_fd;
 
-int pool_size = 3,
+int pool_size = 5,
     current_node_count;
 struct node_info nodes[MAX_NODE_COUNT];
 
